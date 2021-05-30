@@ -1,0 +1,242 @@
+<!-- just a polar drawing machine -->
+<html>
+	<head>
+		<title>Interactive Visual Experience Generator - Omega Point Research</title>
+
+		<style>
+			.container {
+				position: relative;
+			}
+
+			.container > canvas {
+				position: absolute;
+				top: 0;
+				left: 0;
+			}
+		</style>
+		
+	</head>
+	<body>
+		<!-- first make the canvas then link any scripts -->
+		<div class="container">
+			<canvas id="frontground"></canvas>
+		</div>
+
+		<script>
+			//define some necessary canvas related variables
+			const width = window.innerWidth - .2 * window.innerWidth;
+			const height = window.innerHeight - .2 * window.innerHeight;
+
+			const canvas = document.getElementById("frontground");
+			canvas.width = width;
+			canvas.height = height;
+			const context = canvas.getContext("2d");
+			
+			const Tips = {
+				basicShapes: {
+					circle: {
+						colorNum: 0,
+						thickness: 2,
+						step: (2 * Math.PI) / 360,
+						fullAngle: (2 * Math.PI),
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * Math.cos(angle), radius * Math.sin(angle)];
+						}
+					}
+				},
+
+				flowers: {
+					threePedal: {
+						step: (2 * Math.PI) / 360,
+						fullAngle: 2 * Math.PI,
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * (Math.cos(rotation + angle) * Math.cos(3 * angle)), radius * (Math.sin(rotation + angle) * Math.cos(3 * angle))];
+						}
+					}
+				}
+			}
+
+			var brush = {
+				x: 0,
+				y: 0,
+
+				radius: {
+					value: 0,
+					growing: true
+				},
+
+				colorNum: 0,
+				thickness: 2,
+
+				angle: 0,
+				rotation: 0,				
+
+				tip: Tips.flowers.threePedal
+			}
+
+			//This is the draw function.
+			function leftOutline(brush, context) {
+				context.beginPath();
+				context.strokeStyle = "#" + brush.colorNum.toString(16);
+				context.lineWidth = brush.thickness;
+
+				offsets = brush.tip.equation(brush.radius.value, brush.angle, brush.rotation)
+				context.moveTo(brush.x + offsets[0], brush.y + offsets[1]);
+
+				brush.angle += brush.tip.step;
+
+				offsets = brush.tip.equation(brush.radius.value, brush.angle, brush.rotation);
+				context.lineTo(brush.x + offsets[0], brush.y + offsets[1]);
+
+				context.stroke();
+				context.closePath();
+			}
+
+			//Find a way to switch this over to RGB values eventually.
+			function colorScroller(brush) {
+				brush.colorNum++;
+
+				if (brush.colorNum == 16777215) {
+					brush.colorNum = 0
+				}
+			}
+
+			function randomColor(brush) {
+				let red = Math.floor(Math.random() * 256);
+				let green = Math.floor(Math.random() *256);
+				let blue = Math.floor(Math.random() *256);
+
+				let randomColorCode = red.toString(16) + green.toString(16) + blue.toString(16);
+				brush.colorNum = parseInt(randomColorCode, 16);
+			}
+
+			//increments or decrements radius, determines if radius.growing should be true or false
+			function radiusGrowShrinker(brush) {
+				if (brush.radius.growing) {
+					brush.radius.value++
+				} else {
+					brush.radius.value--
+				}
+
+				if (brush.radius.value <= 0) {
+					brush.radius.growing = true;
+				}
+
+				if (brush.radius.value >= width / 2 || brush.radius.value >= width / 2) {
+					brush.radius.growing = false;
+				}
+			}
+
+			//increments brush.rotation (turning the shape clockwise)
+			function shapeSpinner(brush) {
+				brush.rotation += brush.tip.step;
+				if (brush.rotation >= 2 * Math.PI) {
+					brush.rotation -= 2 * Math.PI;
+				}
+			}
+
+			//decrements brush.rotation (turns shape counter-clockwise)
+			function leftSpinner(brush) {
+				brush.rotation -= brush.tip.step
+				if (brush.rotation <= 0) {
+					brush.rotation += 2 * Math.PI;
+				}
+			}
+
+			//draws the full shape instead of tracing the path slowly
+			function fullShape(brush) {
+				brush.angle = 0;
+				while (brush.angle < brush.tip.fullAngle) {
+					leftOutline(brush, context);
+				};
+			}
+
+			//enables calls to shapeSpinner on mousedown when mouse is moving
+			var spinShape = false;
+
+			canvas.addEventListener("mousemove", e => {
+				brush.x = e.offsetX; //update the brush
+				brush.y = e.offsetY;
+
+				fullShape(brush); //draw the full shape
+
+				radiusGrowShrinker(brush);
+				colorScroller(brush);
+
+				if (spinShape) {
+					shapeSpinner(brush);
+				}
+			});
+
+			//toggles "spinShape"
+			canvas.addEventListener("mousedown", e => {
+				spinShape = true;
+			});
+
+			canvas.addEventListener("mouseup", e => {
+				spinShape = false;
+			});
+
+			//up & down arrows change radius.value, left right arrows change rotation, all arrows draw
+			//spacebar functionality exists as well traces paths
+			//e switches to erasing mode
+			//d switches back to flowers
+			//and more!
+			window.addEventListener("keydown", e => {
+				switch (e.key) {
+					case "ArrowUp":
+					if (brush.radius.value < width / 2 && brush.radius.value < height / 2) {
+						brush.radius.value++;
+					}
+					
+					leftOutline(brush, context);
+					break;
+
+					case "ArrowDown":
+					if (brush.radius.value > 1) {
+						brush.radius.value--;
+					}
+				
+					leftOutline(brush, context);
+					break;
+
+					case "ArrowRight":
+					shapeSpinner(brush);
+					colorScroller(brush);
+					fullShape(brush);
+					break;
+
+					case "ArrowLeft":
+					leftSpinner(brush);
+					colorScroller(brush);
+					fullShape(brush);
+					break;
+
+					case " ":
+					randomColor(brush);
+					leftOutline(brush, context);
+					break
+
+					case "e":
+					context.globalCompositeOperation = "destination-out";
+					brush.tip = Tips.basicShapes.circle;
+					break;
+
+					case "d":
+					context.globalCompositeOperation = "source-over";
+					brush.tip = Tips.flowers.threePedal;
+					break
+
+					case "s":
+					shapeSpinner(brush);
+					fullShape(brush);
+					randomColor(brush);
+
+				}
+			})
+		</script>
+
+	</body>
+</html>

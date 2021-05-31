@@ -18,6 +18,9 @@
 				z-index: 0;
 			}
 
+			#frontground {
+				z-index: 1;
+			}
 			canvas {
 				background-color: transparent;
 			}
@@ -291,10 +294,17 @@
 					break
 
 					case "b":
-					//context.save();
-					//bgContext = context.restore();
-					//context.clearRect(0, 0, width, height);
-					//break
+					let newBackground = canvas.toDataURL();
+					let tempImage = new Image();
+
+					tempImage.onload = function() {
+						console.log("YO!")
+						bgContext.clearRect(0, 0, width, height);
+						bgContext.drawImage(tempImage, 0, 0);
+					}
+
+					tempImage.src = newBackground;
+					break
 
 					case "c":
 					brush.tip = Tips.basicShapes.circle;

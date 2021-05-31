@@ -13,13 +13,26 @@
 				top: 0;
 				left: 0;
 			}
+
+			#background {
+				z-index: 0;
+			}
+
+			canvas {
+				background-color: transparent;
+			}
+
+			body {
+				background-color: black;
+			}
 		</style>
 		
 	</head>
 	<body>
 		<!-- first make the canvas then link any scripts -->
-		<div class="container">
+		<div class="container" id="colorTown">
 			<canvas id="frontground"></canvas>
+			<canvas id="background"></canvas>
 		</div>
 
 		<script>
@@ -27,23 +40,62 @@
 			const width = window.innerWidth - .2 * window.innerWidth;
 			const height = window.innerHeight - .2 * window.innerHeight;
 
+			const background = document.getElementById("background");
+			background.width = width;
+			background.height = height;
+			var bgContext = background.getContext("2d");
+			
 			const canvas = document.getElementById("frontground");
 			canvas.width = width;
 			canvas.height = height;
-			const context = canvas.getContext("2d");
-			
+			var context = canvas.getContext("2d");
+
 			const Tips = {
 				basicShapes: {
 					circle: {
-						colorNum: 0,
-						thickness: 2,
-						step: (2 * Math.PI) / 360,
+						step: Math.PI / 180,
 						fullAngle: (2 * Math.PI),
 
 						equation: function(radius, angle, rotation=0) {
 							return [radius * Math.cos(angle), radius * Math.sin(angle)];
 						}
-					}
+					},
+
+					triangle: {
+						step: (Math.PI / 180) * 120,
+						fullAngle: (2 * Math.PI),
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * Math.cos(rotation + angle), radius * Math.sin(rotation + angle)]
+						}
+					},
+
+					square: {
+						step: (Math.PI / 180) * 90,
+						fullAngle: (2 * Math.PI),
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * Math.cos(rotation + angle), radius * Math.sin(rotation + angle)]
+						}
+					},	
+
+					pentagon: {
+						step: (Math.PI / 180) * 72,
+						fullAngle: (2 * Math.PI),
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * Math.cos(rotation + angle), radius * Math.sin(rotation + angle)]
+						},
+					},
+
+					star: {
+						step: (Math.PI / 180) * 144,
+						fullAngle: (4 * Math.PI),
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * Math.cos(rotation + angle), radius * Math.sin(rotation + angle)]
+						}
+					}				
 				},
 
 				flowers: {
@@ -54,7 +106,25 @@
 						equation: function(radius, angle, rotation=0) {
 							return [radius * (Math.cos(rotation + angle) * Math.cos(3 * angle)), radius * (Math.sin(rotation + angle) * Math.cos(3 * angle))];
 						}
-					}
+					},
+
+					fourPedal: {
+						step: (2 * Math.PI) / 360,
+						fullAngle: 2 * Math.PI,
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * (Math.cos(rotation + angle) * Math.cos(2 * angle)), radius * (Math.sin(rotation + angle) * Math.cos(2 * angle))];
+						}
+					},
+
+					fivePedal: {
+						step: (2 * Math.PI) / 360,
+						fullAngle: 2 * Math.PI,
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * (Math.cos(rotation + angle) * 2 * Math.cos(5 * angle)), radius * (Math.sin(rotation + angle) * Math.cos(5 * angle))];
+						}
+					},
 				}
 			}
 
@@ -73,7 +143,8 @@
 				angle: 0,
 				rotation: 0,				
 
-				tip: Tips.flowers.threePedal
+				tip: Tips.flowers.threePedal,
+				context: context
 			}
 
 			//This is the draw function.
@@ -131,7 +202,7 @@
 
 			//increments brush.rotation (turning the shape clockwise)
 			function shapeSpinner(brush) {
-				brush.rotation += brush.tip.step;
+				brush.rotation += (Math.PI / 180);
 				if (brush.rotation >= 2 * Math.PI) {
 					brush.rotation -= 2 * Math.PI;
 				}
@@ -139,7 +210,7 @@
 
 			//decrements brush.rotation (turns shape counter-clockwise)
 			function leftSpinner(brush) {
-				brush.rotation -= brush.tip.step
+				brush.rotation -= (Math.PI / 180)
 				if (brush.rotation <= 0) {
 					brush.rotation += 2 * Math.PI;
 				}
@@ -149,14 +220,14 @@
 			function fullShape(brush) {
 				brush.angle = 0;
 				while (brush.angle < brush.tip.fullAngle) {
-					leftOutline(brush, context);
+					leftOutline(brush, brush.context);
 				};
 			}
 
 			//enables calls to shapeSpinner on mousedown when mouse is moving
 			var spinShape = false;
 
-			canvas.addEventListener("mousemove", e => {
+			document.getElementById("colorTown").addEventListener("mousemove", e => {
 				brush.x = e.offsetX; //update the brush
 				brush.y = e.offsetY;
 
@@ -171,11 +242,11 @@
 			});
 
 			//toggles "spinShape"
-			canvas.addEventListener("mousedown", e => {
+			document.getElementById("colorTown").addEventListener("mousedown", e => {
 				spinShape = true;
 			});
 
-			canvas.addEventListener("mouseup", e => {
+			document.getElementById("colorTown").addEventListener("mouseup", e => {
 				spinShape = false;
 			});
 
@@ -205,13 +276,13 @@
 					case "ArrowRight":
 					shapeSpinner(brush);
 					colorScroller(brush);
-					fullShape(brush);
+					fullShape(brush, context);
 					break;
 
 					case "ArrowLeft":
 					leftSpinner(brush);
 					colorScroller(brush);
-					fullShape(brush);
+					fullShape(brush, context);
 					break;
 
 					case " ":
@@ -219,9 +290,15 @@
 					leftOutline(brush, context);
 					break
 
-					case "e":
-					context.globalCompositeOperation = "destination-out";
+					case "b":
+					//context.save();
+					//bgContext = context.restore();
+					//context.clearRect(0, 0, width, height);
+					//break
+
+					case "c":
 					brush.tip = Tips.basicShapes.circle;
+					fullShape(brush, context);
 					break;
 
 					case "d":
@@ -229,11 +306,37 @@
 					brush.tip = Tips.flowers.threePedal;
 					break
 
-					case "s":
-					shapeSpinner(brush);
-					fullShape(brush);
-					randomColor(brush);
+					case "e":
+					context.globalCompositeOperation = "destination-out";
+					break;
 
+					case "p":
+					brush.tip = Tips.basicShapes.pentagon
+					break;
+
+					case "s":
+					if (brush.tip === Tips.basicShapes.square) {
+						brush.tip = Tips.basicShapes.star;
+					} else {
+						brush.tip = Tips.basicShapes.square;
+					}
+					break;
+
+					case "t":
+					brush.tip = Tips.basicShapes.triangle;
+					break;
+
+					case "3":
+					brush.tip = Tips.flowers.threePedal;
+					break;
+
+					case "4":
+					brush.tip = Tips.flowers.fourPedal;
+					break;
+
+					case "5":
+					brush.tip = Tips.flowers.fivePedal;
+					break;
 				}
 			})
 		</script>

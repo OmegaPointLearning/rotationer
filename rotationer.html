@@ -1,7 +1,7 @@
 <!-- just a polar drawing machine -->
 <html>
 	<head>
-		<title>Interactive Visual Experience Generator - Omega Point Research</title>
+		<title>Rotationer - Omega Point Research</title>
 
 		<style>
 			.container {
@@ -103,6 +103,7 @@
 
 				flowers: {
 					threePedal: {
+						name: "threePedal",
 						step: (2 * Math.PI) / 360,
 						fullAngle: 2 * Math.PI,
 
@@ -112,6 +113,7 @@
 					},
 
 					fourPedal: {
+						name: "fourPedal",
 						step: (2 * Math.PI) / 360,
 						fullAngle: 2 * Math.PI,
 
@@ -121,11 +123,22 @@
 					},
 
 					fivePedal: {
+						name: "fivePedal",
 						step: (2 * Math.PI) / 360,
 						fullAngle: 2 * Math.PI,
 
 						equation: function(radius, angle, rotation=0) {
-							return [radius * (Math.cos(rotation + angle) * 2 * Math.cos(5 * angle)), radius * (Math.sin(rotation + angle) * Math.cos(5 * angle))];
+							return [radius * (Math.cos( (rotation + angle)) *  Math.cos((5) * angle)), radius * (Math.sin( (rotation + angle)) * Math.cos((5) * angle))];
+						}
+					},
+
+					sixPedal: {
+						name: "sixPedal",
+						step: (2 * Math.PI) / 360,
+						fullAngle: 2 * Math.PI,
+
+						equation: function(radius, angle, rotation=0) {
+							return [radius * (Math.cos(2 * (rotation + angle)) * Math.cos(3 * angle)), radius * (Math.sin(2 * (rotation + angle)) * Math.cos(3 * angle))];
 						}
 					},
 				}
@@ -150,7 +163,7 @@
 				context: context
 			}
 
-			//This is the draw function.
+			//This is the draw functions.
 			function leftOutline(brush, context) {
 				context.beginPath();
 				context.strokeStyle = "#" + brush.colorNum.toString(16);
@@ -225,6 +238,27 @@
 				while (brush.angle < brush.tip.fullAngle) {
 					leftOutline(brush, brush.context);
 				};
+			}
+
+			function nextTipIn(brush, category) {
+				let current = brush.tip.name;
+				console.log(current);
+
+				let keys = Object.keys(category);
+				console.log(keys);
+
+				let index = keys.indexOf(current);
+				console.log(index);
+
+				if (index == keys.length - 1) {
+					index = 0;
+				} else {
+					index++;
+				}
+
+				let next = keys[index];
+				console.log(next);
+				brush.tip = category[next];
 			}
 
 			//enables calls to shapeSpinner on mousedown when mouse is moving
@@ -318,6 +352,11 @@
 
 					case "e":
 					context.globalCompositeOperation = "destination-out";
+					break;
+
+					case "n":
+					nextTipIn(brush, Tips.flowers);
+					fullShape(brush);
 					break;
 
 					case "p":
